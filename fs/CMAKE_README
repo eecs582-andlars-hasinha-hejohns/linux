@@ -1,0 +1,15 @@
+Run the following commands at the root directory:
+make x86_64_defconfig
+make kvm_guest.config
+make modules
+
+# Do not worry if make modules fails... only needed to generate some files expected in build
+
+navigate to fs/ and run the following commands to build:
+mkdir build && cd build
+cmake ../
+make
+
+# cmake should install when you install build-essentials
+# everytime you modify the cmake it is recomended to delete build directory and restart
+# only need to run make if you change source files... not cmake
