@@ -220,6 +220,7 @@ static bool io_sqd_handle_event(struct io_sq_data *sqd)
 
 static int io_sq_thread(void *data)
 {
+	printk("[hejohns] starting io_sq_thread\n");
 	struct io_sq_data *sqd = data;
 	struct io_ring_ctx *ctx;
 	unsigned long timeout = 0;
@@ -335,10 +336,17 @@ void io_sqpoll_wait_sq(struct io_ring_ctx *ctx)
 __cold int io_sq_offload_create(struct io_ring_ctx *ctx,
 				struct io_uring_params *p)
 {
+	printk("[hejohns] io_sq_offload_create\n");
+        struct pid *task_pid = get_task_pid(current, PIDTYPE_PID);
+        // old
+        //struct pid *task_pid = task_pid(current);
+        //task_pid = get_pid(task_pid);
+	printk("[hejohns] pid %d\n", pid_nr(task_pid));
 	int ret;
 
 	/* Retain compatibility with failing for an invalid attach attempt */
 	if ((ctx->flags & (IORING_SETUP_ATTACH_WQ | IORING_SETUP_SQPOLL)) ==
+                // TODO: hejohns: maybe we need to add error checking for IORING_SETUP_SQPOLL_DAEMON?
 				IORING_SETUP_ATTACH_WQ) {
 		struct fd f;
 
@@ -351,7 +359,9 @@ __cold int io_sq_offload_create(struct io_ring_ctx *ctx,
 		}
 		fdput(f);
 	}
-	if (ctx->flags & IORING_SETUP_SQPOLL) {
+        if(ctx->flags & IORING_SETUP_SQPOLL_DAEMON){
+		printk("[hejohns] we got here???\n");
+        } else if (ctx->flags & IORING_SETUP_SQPOLL) {
 		struct task_struct *tsk;
 		struct io_sq_data *sqd;
 		bool attached;

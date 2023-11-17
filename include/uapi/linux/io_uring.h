@@ -190,6 +190,11 @@ enum {
  */
 #define IORING_SETUP_NO_SQARRAY		(1U << 16)
 
+/*
+ * EECS 582
+ */
+#define IORING_SETUP_SQPOLL_DAEMON	(1U << 17)	/* SQ poll by kernel daemon */
+
 enum io_uring_op {
 	IORING_OP_NOP,
 	IORING_OP_READV,

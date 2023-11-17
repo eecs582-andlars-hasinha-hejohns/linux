@@ -3848,9 +3848,11 @@ static struct file *io_uring_get_file(struct io_ring_ctx *ctx)
 	return file;
 }
 
+// must be called in original process context
 static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 				  struct io_uring_params __user *params)
 {
+	printk("[hejohns] io_uring_create");
 	struct io_ring_ctx *ctx;
 	struct io_uring_task *tctx;
 	struct file *file;
@@ -4061,6 +4063,7 @@ err_fput:
  */
 static long io_uring_setup(u32 entries, struct io_uring_params __user *params)
 {
+	printk("[hejohns] io_uring_setup\n");
 	struct io_uring_params p;
 	int i;
 
@@ -4079,7 +4082,7 @@ static long io_uring_setup(u32 entries, struct io_uring_params __user *params)
 			IORING_SETUP_SQE128 | IORING_SETUP_CQE32 |
 			IORING_SETUP_SINGLE_ISSUER | IORING_SETUP_DEFER_TASKRUN |
 			IORING_SETUP_NO_MMAP | IORING_SETUP_REGISTERED_FD_ONLY |
-			IORING_SETUP_NO_SQARRAY))
+			IORING_SETUP_NO_SQARRAY | IORING_SETUP_SQPOLL_DAEMON))
 		return -EINVAL;
 
 	return io_uring_create(entries, &p, params);
