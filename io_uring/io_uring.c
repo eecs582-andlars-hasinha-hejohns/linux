@@ -294,6 +294,7 @@ static int io_alloc_hash_table(struct io_hash_table *table, unsigned bits)
 
 static __cold struct io_ring_ctx *io_ring_ctx_alloc(struct io_uring_params *p)
 {
+	dump_stack();
 	struct io_ring_ctx *ctx;
 	int hash_bits;
 
@@ -4064,6 +4065,7 @@ err_fput:
 static long io_uring_setup(u32 entries, struct io_uring_params __user *params)
 {
 	printk("[hejohns] io_uring_setup\n");
+	dump_stack();
 	struct io_uring_params p;
 	int i;
 

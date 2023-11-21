@@ -221,6 +221,7 @@ static bool io_sqd_handle_event(struct io_sq_data *sqd)
 static int io_sq_thread(void *data)
 {
 	printk("[hejohns] starting io_sq_thread\n");
+	dump_stack();
 	struct io_sq_data *sqd = data;
 	struct io_ring_ctx *ctx;
 	unsigned long timeout = 0;
