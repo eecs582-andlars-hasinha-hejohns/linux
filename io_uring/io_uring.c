@@ -292,17 +292,28 @@ static int io_alloc_hash_table(struct io_hash_table *table, unsigned bits)
 	return 0;
 }
 
+/*
+ * 582: called in `io_uring_create`
+ * TODO: what does this do?
+ * TODO: what is a `struct io_ring_ctx`
+ * my best guess is that `io_ring_ctx` is the kernel-side well, context for the io_uring.
+ * The shared memory ring buffer is one thing, but all the metadata about it is stored in the io_ring_ctx?
+ */
 static __cold struct io_ring_ctx *io_ring_ctx_alloc(struct io_uring_params *p)
 {
-	dump_stack();
+	dump_stack(); // 582
 	struct io_ring_ctx *ctx;
 	int hash_bits;
 
+        // 582: `kzalloc` is like calloc, but with malloc style arguments (ie no array)
 	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
 	if (!ctx)
 		return NULL;
 
+        // 582: an xarray is some sort of radix tree of pointers
+        // what is `ctx->io_bl_xa` for?
 	xa_init(&ctx->io_bl_xa);
+        // 582: TODO: what the hell is the rest of this doing
 
 	/*
 	 * Use 5 bits less than the max cq entries, that should give us around
@@ -338,6 +349,8 @@ static __cold struct io_ring_ctx *io_ring_ctx_alloc(struct io_uring_params *p)
 	init_waitqueue_head(&ctx->rsrc_quiesce_wq);
 	spin_lock_init(&ctx->completion_lock);
 	spin_lock_init(&ctx->timeout_lock);
+        // 582: io_uring has its own singly linked list macros
+        // for the Work Queue?
 	INIT_WQ_LIST(&ctx->iopoll_list);
 	INIT_LIST_HEAD(&ctx->io_buffers_pages);
 	INIT_LIST_HEAD(&ctx->io_buffers_comp);
@@ -3599,6 +3612,9 @@ static int io_get_ext_arg(unsigned flags, const void __user *argp, size_t *argsz
 	return 0;
 }
 
+/*
+ * 582: io_uring_enter definition
+ */
 SYSCALL_DEFINE6(io_uring_enter, unsigned int, fd, u32, to_submit,
 		u32, min_complete, u32, flags, const void __user *, argp,
 		size_t, argsz)
@@ -3850,15 +3866,21 @@ static struct file *io_uring_get_file(struct io_ring_ctx *ctx)
 }
 
 // must be called in original process context
+/*
+ * 582: this is the real meat of io_uring creation
+ */
 static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 				  struct io_uring_params __user *params)
 {
-	printk("[hejohns] io_uring_create");
-	struct io_ring_ctx *ctx;
-	struct io_uring_task *tctx;
-	struct file *file;
+	printk("[hejohns] io_uring_create"); // 582
+	struct io_ring_ctx *ctx; // 582: TODO: what is `struct io_ring_ctx`?  See def
+	struct io_uring_task *tctx; // 582: TODO: what is `struct io_uring_task`? See def
+	struct file *file; // 582: the io_uring gets returned as a file descriptor in io_uring_setup. This is the memory shared between the kernel and user?
 	int ret;
 
+        // 582: a bunch of error checking stuff...
+        // 582: I'm ignoring until END
+        /* 582: BEGIN */
 	if (!entries)
 		return -EINVAL;
 	if (entries > IORING_MAX_ENTRIES) {
@@ -3900,6 +3922,8 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 		p->cq_entries = 2 * p->sq_entries;
 	}
 
+        /* 582: END */
+        // 582: TODO: what does this do? See def
 	ctx = io_ring_ctx_alloc(p);
 	if (!ctx)
 		return -ENOMEM;
@@ -4062,20 +4086,28 @@ err_fput:
  * ring size, we return the actual sq/cq ring sizes (among other things) in the
  * params structure passed in.
  */
+/*
+ * 582:
+ */
 static long io_uring_setup(u32 entries, struct io_uring_params __user *params)
 {
-	printk("[hejohns] io_uring_setup\n");
-	dump_stack();
+	printk("[hejohns] io_uring_setup\n"); // 582
+	dump_stack(); // 582
 	struct io_uring_params p;
 	int i;
 
+        // 582: note: `copy_from_user`/`copy_to_user` is prolific
 	if (copy_from_user(&p, params, sizeof(p)))
 		return -EFAULT;
+        // 582: idk what io_uring_params.resv is but I don't think it matters
 	for (i = 0; i < ARRAY_SIZE(p.resv); i++) {
 		if (p.resv[i])
 			return -EINVAL;
 	}
 
+        // 582: check that one of the flags is set
+        // hejohns: I've added IORING_SETUP_SQPOLL_DAEMON
+        // to mean that this io_uring should be registered to be polled by the kernel daemon
 	if (p.flags & ~(IORING_SETUP_IOPOLL | IORING_SETUP_SQPOLL |
 			IORING_SETUP_SQ_AFF | IORING_SETUP_CQSIZE |
 			IORING_SETUP_CLAMP | IORING_SETUP_ATTACH_WQ |
@@ -4087,6 +4119,7 @@ static long io_uring_setup(u32 entries, struct io_uring_params __user *params)
 			IORING_SETUP_NO_SQARRAY | IORING_SETUP_SQPOLL_DAEMON))
 		return -EINVAL;
 
+        // 582: again, `io_uring_setup` is really just a wrapper around `io_uring_create`
 	return io_uring_create(entries, &p, params);
 }
 
@@ -4108,9 +4141,13 @@ static inline bool io_uring_allowed(void)
 	return in_group_p(io_uring_group);
 }
 
+/*  582: syscall definition to create io_uring
+ * This is our entry point for the SQ_POLL business
+ */
 SYSCALL_DEFINE2(io_uring_setup, u32, entries,
 		struct io_uring_params __user *, params)
 {
+        // 582: this is just a thin error checking wrapper around `io_uring_setup`
 	if (!io_uring_allowed())
 		return -EPERM;
 

@@ -1,12 +1,15 @@
 #define _GNU_SOURCE
-#include <liburing.h>
 #include <linux/io_uring.h>
+#if 0
+#include <liburing.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sched.h>
 #include <string.h>
+#endif
 
 int main(){
+#if 0
     struct io_uring ring;
     struct io_uring_params params;
     params.flags = IORING_SETUP_SQPOLL_DAEMON;
@@ -30,7 +33,9 @@ int main(){
         io_uring_cqe_seen(&ring, cqe);
     }
     //cqe->user_data;
-#endif
     io_uring_queue_exit(&ring);
+#endif
     return EXIT_SUCCESS;
+#endif
+    return IORING_SETUP_SQPOLL_DAEMON;
 }

@@ -49,6 +49,10 @@ struct io_hash_table {
  */
 #define IO_RINGFD_REG_MAX 16
 
+/*
+ * 582: referenced in `io_uring_create`
+ * TODO: what is this?
+ */
 struct io_uring_task {
 	/* submission side */
 	int				cached_refs;
@@ -193,6 +197,11 @@ struct io_alloc_cache {
 	size_t			elem_size;
 };
 
+/*
+ * 582: referenced in `io_uring_create`
+ * TODO: what is this?
+ * @see `io_ring_ctx_alloc`
+ */
 struct io_ring_ctx {
 	/* const or read-mostly hot data */
 	struct {
