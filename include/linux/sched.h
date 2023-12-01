@@ -1094,7 +1094,7 @@ struct task_struct {
 	struct files_struct		*files;
 
 #ifdef CONFIG_IO_URING
-	struct io_uring_task		*io_uring;
+	struct io_uring_task		*io_uring; // 582:
 #endif
 
 	/* Namespaces: */

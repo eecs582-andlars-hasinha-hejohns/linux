@@ -2699,6 +2699,10 @@ static void io_pages_free(struct page ***pages, int npages)
 	*pages = NULL;
 }
 
+/*
+ * 582: the meat of the ring allocation
+ * @SEE: `io_rings_map`
+ */
 static void *__io_uaddr_map(struct page ***pages, unsigned short *npages,
 			    unsigned long uaddr, size_t size)
 {
@@ -2714,10 +2718,12 @@ static void *__io_uaddr_map(struct page ***pages, unsigned short *npages,
 	nr_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	if (nr_pages > USHRT_MAX)
 		return ERR_PTR(-EINVAL);
+	// 582: NOTE: the memory allocation is here?
 	page_array = kvmalloc_array(nr_pages, sizeof(struct page *), GFP_KERNEL);
 	if (!page_array)
 		return ERR_PTR(-ENOMEM);
 
+	// 582: pins rings in memory
 	ret = pin_user_pages_fast(uaddr, nr_pages, FOLL_WRITE | FOLL_LONGTERM,
 					page_array);
 	if (ret != nr_pages) {
@@ -2753,6 +2759,10 @@ err:
 	return page_to_virt(page_array[0]);
 }
 
+/*
+ * 582: wrapper for ring allocation
+ * @SEE: `io_allocate_scq_urings`
+ */
 static void *io_rings_map(struct io_ring_ctx *ctx, unsigned long uaddr,
 			  size_t size)
 {
@@ -3769,13 +3779,20 @@ bool io_is_uring_fops(struct file *file)
 	return file->f_op == &io_uring_fops;
 }
 
+/*
+ * 582: io_allocate_submission+completion queue_urings
+ * @SEE: `io_uring_create`
+ */
 static __cold int io_allocate_scq_urings(struct io_ring_ctx *ctx,
 					 struct io_uring_params *p)
 {
+	// 582: these are the actual ring buffers
 	struct io_rings *rings;
 	size_t size, sq_array_offset;
 	void *ptr;
 
+	// 582: ignore until END
+	/* 582: BEGIN */
 	/* make sure these are sane, as we already accounted them */
 	ctx->sq_entries = p->sq_entries;
 	ctx->cq_entries = p->cq_entries;
@@ -3787,11 +3804,13 @@ static __cold int io_allocate_scq_urings(struct io_ring_ctx *ctx,
 	if (!(ctx->flags & IORING_SETUP_NO_MMAP))
 		rings = io_mem_alloc(size);
 	else
+	        // 582: NOTE: the real work is here
 		rings = io_rings_map(ctx, p->cq_off.user_addr, size);
 
 	if (IS_ERR(rings))
 		return PTR_ERR(rings);
 
+	// 582: NOTE: the rings are stored here
 	ctx->rings = rings;
 	if (!(ctx->flags & IORING_SETUP_NO_SQARRAY))
 		ctx->sq_array = (u32 *)((char *)rings + sq_array_offset);
@@ -3820,6 +3839,7 @@ static __cold int io_allocate_scq_urings(struct io_ring_ctx *ctx,
 	}
 
 	ctx->sq_sqes = ptr;
+	/* 582: END */
 	return 0;
 }
 
@@ -4010,21 +4030,29 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
         //
         // grabs a refcount on the ``real address space"?
 	mmgrab(current->mm);
+        // 582: I guess io_uring just calls the ``real address space" ctx->mm_account
+        // can probably ignore
 	ctx->mm_account = current->mm;
 
+        // 582: see `io_allocate_scq_urings`
+	// but it seems to be where the rings are actually allocated
 	ret = io_allocate_scq_urings(ctx, p);
+	// ctx->rings will store the rings
 	if (ret)
 		goto err;
 
-        // 582: TODO:
+        // 582: TODO: BIG
 	ret = io_sq_offload_create(ctx, p);
 	if (ret)
 		goto err;
 
+	// 582: TODO: what is this? what is rsrc?
+	// receive submission receive completion?
 	ret = io_rsrc_init(ctx);
 	if (ret)
 		goto err;
 
+	// 582: a bunch of stuff I'm going to ignore
 	p->sq_off.head = offsetof(struct io_rings, sq.head);
 	p->sq_off.tail = offsetof(struct io_rings, sq.tail);
 	p->sq_off.ring_mask = offsetof(struct io_rings, sq_ring_mask);
@@ -4056,24 +4084,34 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 			IORING_FEAT_RSRC_TAGS | IORING_FEAT_CQE_SKIP |
 			IORING_FEAT_LINKED_FILE | IORING_FEAT_REG_REG_RING;
 
+	// 582: io_uring_setup returns the parameters with updates for metadata
+	// about the io_uring or something
 	if (copy_to_user(params, p, sizeof(*p))) {
 		ret = -EFAULT;
 		goto err;
 	}
 
+	// 582: I'm ignoring this
 	if (ctx->flags & IORING_SETUP_SINGLE_ISSUER
 	    && !(ctx->flags & IORING_SETUP_R_DISABLED))
 		WRITE_ONCE(ctx->submitter_task, get_task_struct(current));
 
+	// 582: I'm not clear on the mechanism, but it does what you think it does
+	//
+	// it gets a fd for the ctx, which the user can mmap
+	// see `io_uring_get_file`
 	file = io_uring_get_file(ctx);
 	if (IS_ERR(file)) {
 		ret = PTR_ERR(file);
 		goto err;
 	}
 
+	// 582: TODO: what is this?
+	// I'm going to ignore this for now
 	ret = __io_uring_add_tctx_node(ctx);
 	if (ret)
 		goto err_fput;
+	// 582: NOTE: `struct task_struct` has an io_uring-- for what?
 	tctx = current->io_uring;
 
 	/*
@@ -4087,6 +4125,9 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	if (ret < 0)
 		goto err_fput;
 
+	// 582: what in the blazes is this?
+	// based off the git blame, it has something to do with
+	// #include <trace/events/io_uring.h>
 	trace_io_uring_create(ret, ctx, p->sq_entries, p->cq_entries, p->flags);
 	return ret;
 err:

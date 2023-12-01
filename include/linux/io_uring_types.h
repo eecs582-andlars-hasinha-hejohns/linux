@@ -52,6 +52,7 @@ struct io_hash_table {
 /*
  * 582: referenced in `io_uring_create`
  * TODO: what is this?
+ * And stored in `struct task_struct`
  */
 struct io_uring_task {
 	/* submission side */
