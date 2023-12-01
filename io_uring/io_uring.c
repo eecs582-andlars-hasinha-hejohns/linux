@@ -4128,6 +4128,8 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	// 582: what in the blazes is this?
 	// based off the git blame, it has something to do with
 	// #include <trace/events/io_uring.h>
+	// https://docs.kernel.org/trace/tracepoints.html
+	// https://www.kernel.org/doc/html/latest/trace/events.html
 	trace_io_uring_create(ret, ctx, p->sq_entries, p->cq_entries, p->flags);
 	return ret;
 err:
