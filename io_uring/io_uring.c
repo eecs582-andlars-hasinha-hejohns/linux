@@ -3923,8 +3923,10 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	}
 
         /* 582: END */
-        // 582: TODO: what does this do? See def
+        // 582: TODO: what does this do? See `io_ring_ctx_alloc`
 	ctx = io_ring_ctx_alloc(p);
+        // 582: ignore until END
+        /* 582: BEGIN */
 	if (!ctx)
 		return -ENOMEM;
 
@@ -3953,7 +3955,13 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	    !(ctx->flags & IORING_SETUP_SQPOLL))
 		ctx->syscall_iopoll = 1;
 
+        // 582: this checks something like
+        // if we're in 32bit syscall compatibility mode
+        // or something, not sure-- general linux mechanism
 	ctx->compat = in_compat_syscall();
+        // 582: some sort of capability check for ``locking shared memory"
+        // capability.c:399
+        // not super relevant
 	if (!ns_capable_noaudit(&init_user_ns, CAP_IPC_LOCK))
 		ctx->user = get_uid(current_user());
 
@@ -3962,6 +3970,8 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	 * COOP_TASKRUN is set, then IPIs are never needed by the app.
 	 */
 	ret = -EINVAL;
+        // 582: NOTE: this is the interesting case for us
+        // but it's just error checking
 	if (ctx->flags & IORING_SETUP_SQPOLL) {
 		/* IPI related flags don't make sense with SQPOLL */
 		if (ctx->flags & (IORING_SETUP_COOP_TASKRUN |
@@ -3987,6 +3997,7 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	    !(ctx->flags & IORING_SETUP_SINGLE_ISSUER)) {
 		goto err;
 	}
+        /* 582: END */
 
 	/*
 	 * This is just grabbed for accounting purposes. When a process exits,
@@ -3994,6 +4005,10 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	 * on to this mm purely for the purposes of being able to unaccount
 	 * memory (locked/pinned vm). It's not used for anything else.
 	 */
+        // 582: https://www.kernel.org/doc/html/latest/mm/active_mm.html
+        // just read it, it's quick and interesting
+        //
+        // grabs a refcount on the ``real address space"?
 	mmgrab(current->mm);
 	ctx->mm_account = current->mm;
 
@@ -4001,6 +4016,7 @@ static __cold int io_uring_create(unsigned entries, struct io_uring_params *p,
 	if (ret)
 		goto err;
 
+        // 582: TODO:
 	ret = io_sq_offload_create(ctx, p);
 	if (ret)
 		goto err;

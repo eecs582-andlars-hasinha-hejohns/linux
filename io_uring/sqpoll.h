@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 
+/*
+ * 582:
+ * @TODO: what is this
+ * @see `io_sq_thead`
+ */
 struct io_sq_data {
 	refcount_t		refs;
 	atomic_t		park_pending;
