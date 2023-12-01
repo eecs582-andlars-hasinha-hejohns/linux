@@ -348,11 +348,11 @@ __cold int io_sq_offload_create(struct io_ring_ctx *ctx,
 				struct io_uring_params *p)
 {
 	printk("[hejohns] io_sq_offload_create\n"); // 582
-        struct pid *task_pid = get_task_pid(current, PIDTYPE_PID);
-        // old
-        //struct pid *task_pid = task_pid(current);
-        //task_pid = get_pid(task_pid);
-	printk("[hejohns] pid %d\n", pid_nr(task_pid));
+	struct pid *task_pid = get_task_pid(current, PIDTYPE_PID);
+	// old
+	//struct pid *task_pid = task_pid(current);
+	//task_pid = get_pid(task_pid);
+	printk("[hejohns] pid %d\n", pid_nr(task_pid)); // 582
 	int ret;
 
 	/* Retain compatibility with failing for an invalid attach attempt */
@@ -370,10 +370,15 @@ __cold int io_sq_offload_create(struct io_ring_ctx *ctx,
 		}
 		fdput(f);
 	}
-        if(ctx->flags & IORING_SETUP_SQPOLL_DAEMON){
+	if(ctx->flags & IORING_SETUP_SQPOLL_DAEMON){
+		// 582: indeed, we get here
 		printk("[hejohns] we got here???\n"); // 582
-        } else if (ctx->flags & IORING_SETUP_SQPOLL) {
+		// 582: I don't know how much we need to look at this code
+		// if we just setup a SQ_POLL the same way, isn't that enough?
+	} else if (ctx->flags & IORING_SETUP_SQPOLL) {
 		struct task_struct *tsk;
+		// 582: TODO: what is this?
+		// see `struct io_sq_data`
 		struct io_sq_data *sqd;
 		bool attached;
 
@@ -394,6 +399,7 @@ __cold int io_sq_offload_create(struct io_ring_ctx *ctx,
 			ctx->sq_thread_idle = HZ;
 
 		io_sq_thread_park(sqd);
+		// 582: TODO: what is ctx->sqd_list
 		list_add(&ctx->sqd_list, &sqd->ctx_list);
 		io_sqd_update_thread_idle(sqd);
 		/* don't attach to a dying SQPOLL thread, would be racy */
