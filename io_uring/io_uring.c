@@ -2420,9 +2420,13 @@ static bool io_get_sqe(struct io_ring_ctx *ctx, const struct io_uring_sqe **sqe)
 	return true;
 }
 
+/*
+ * 582:
+ */
 int io_submit_sqes(struct io_ring_ctx *ctx, unsigned int nr)
 	__must_hold(&ctx->uring_lock)
 {
+	printk("[hejohns] I'm in io_submit_sqes\n"); // 582
 	unsigned int entries = io_sqring_entries(ctx);
 	unsigned int left;
 	int ret;

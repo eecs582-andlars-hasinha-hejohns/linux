@@ -164,8 +164,12 @@ static inline bool io_sqd_events_pending(struct io_sq_data *sqd)
 	return READ_ONCE(sqd->state);
 }
 
+/*
+ * 582:
+ */
 static int __io_sq_thread(struct io_ring_ctx *ctx, bool cap_entries)
 {
+	printk("[hejohns] I'm in __io_sq_thread\n"); // 582
 	unsigned int to_submit;
 	int ret = 0;
 
@@ -190,7 +194,7 @@ static int __io_sq_thread(struct io_ring_ctx *ctx, bool cap_entries)
 		 */
 		if (to_submit && likely(!percpu_ref_is_dying(&ctx->refs)) &&
 		    !(ctx->flags & IORING_SETUP_R_DISABLED))
-			ret = io_submit_sqes(ctx, to_submit);
+			ret = io_submit_sqes(ctx, to_submit); // 582: NOTE: ???
 		mutex_unlock(&ctx->uring_lock);
 
 		if (to_submit && wq_has_sleeper(&ctx->sqo_sq_wait))
@@ -262,6 +266,7 @@ static int io_sq_thread(void *data)
 		if (io_run_task_work())
 			sqt_spin = true;
 
+		printk("[harsh] AM I DOING SOMETHING\n"); // 582
 		if (sqt_spin || !time_after(jiffies, timeout)) {
 			if (sqt_spin)
 				timeout = jiffies + sqd->sq_thread_idle;
