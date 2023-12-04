@@ -3633,6 +3633,7 @@ SYSCALL_DEFINE6(io_uring_enter, unsigned int, fd, u32, to_submit,
 		u32, min_complete, u32, flags, const void __user *, argp,
 		size_t, argsz)
 {
+	printk("[harsh] sys_enter ing io_uring_enter\n");
 	struct io_ring_ctx *ctx;
 	struct fd f;
 	long ret;
